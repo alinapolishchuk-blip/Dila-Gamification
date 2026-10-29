@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ДІЛА — Новорічний Адвент Здоров'я</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dila: {
+                            blue: '#004FB6',
+                            dark: '#0B2B70',
+                            navy: '#031742',
+                            cyan: '#00A3FF',
+                            light: '#F2F6FA',
+                            yellow: '#FFC700',
+                            yellowHover: '#E6B300',
+                            green: '#10B981'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    },
+                    borderRadius: {
+                        '4xl': '2rem',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        /* Custom Dila Glossy 3D Spheres */
+        .dila-sphere-blue {
+            background: radial-gradient(circle at 35% 35%, #66b5ff 0%, #004FB6 60%, #022468 100%);
+            box-shadow: inset -4px -4px 10px rgba(0,0,0,0.4), inset 4px 4px 10px rgba(255,255,255,0.6), 0 8px 16px rgba(0,79,182,0.25);
+        }
+        .dila-sphere-cyan {
+            background: radial-gradient(circle at 35% 35%, #b3f0ff 0%, #00A3FF 60%, #005c99 100%);
+            box-shadow: inset -4px -4px 10px rgba(0,0,0,0.3), inset 4px 4px 10px rgba(255,255,255,0.7), 0 8px 16px rgba(0,163,255,0.25);
+        }
+        .dila-sphere-yellow {
+            background: radial-gradient(circle at 35% 35%, #fff5aa 0%, #FFC700 60%, #b38600 100%);
+            box-shadow: inset -4px -4px 10px rgba(0,0,0,0.25), inset 4px 4px 10px rgba(255,255,255,0.8), 0 8px 16px rgba(255,199,0,0.3);
+        }
+        .dila-sphere-glass {
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.2) 60%, rgba(200,225,255,0.3) 100%);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.5);
+            box-shadow: 0 8px 20px rgba(0,79,182,0.15);
+        }
+
+        /* Glassmorphism */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+        }
+        .glass-card-dark {
+            background: rgba(11, 43, 112, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Pulse glow animation for Today's Active Day */
+        @keyframes pulseGlow {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(255, 199, 0, 0.7), 0 8px 20px rgba(0, 79, 182, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(255, 199, 0, 0), 0 12px 25px rgba(255, 199, 0, 0.5);
+            }
+        }
+        .active-day-pulse {
+            animation: pulseGlow 2s infinite;
+        }
+
+        /* Hide scrollbars */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Floating background shapes */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(5deg); }
+        }
+        .animate-float {
+            animation: floatSlow 4s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-800 antialiased min-h-screen flex flex-col items-center justify-center p-0 sm:p-4">
+
+    <!-- TOP DEMO CONTROL BAR (For testing different days and layout modes) -->
+    <div class="w-full max-w-md bg-slate-800 text-white p-2.5 sm:rounded-t-2xl flex flex-wrap items-center justify-between gap-2 text-xs z-50 border-b border-slate-700">
+        <div class="flex items-center gap-1.5 font-medium">
+            <span class="text-dila-yellow"><i class="fa-solid fa-sliders"></i></span>
+            <span>Тестовий режим ДІЛА:</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <label for="daySelect" class="text-slate-300">Сьогодні:</label>
+            <select id="daySelect" onchange="setSimulatedDay(this.value)" class="bg-slate-700 text-white rounded px-2 py-1 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-dila-cyan">
+                <!-- Javascript will populate days 1-31 -->
+            </select>
+            <button onclick="resetCalendarProgress()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1 rounded text-xs transition" title="Скинути прогрес">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- MOBILE PHONE CONTAINER -->
+    <div class="w-full max-w-md bg-dila-light min-h-[844px] sm:rounded-b-3xl shadow-2xl relative overflow-hidden flex flex-col border-x border-b border-slate-700/30">
+
+        <!-- STATUS BAR (Simulated Mobile Phone Top Bar) -->
+        <div class="bg-dila-dark text-white text-[11px] px-5 pt-2 pb-1 flex justify-between items-center z-30 select-none">
+            <span class="font-semibold tracking-tight">09:41</span>
+            <div class="flex items-center gap-2 text-slate-300">
+                <i class="fa-solid fa-signal text-[10px]"></i>
+                <i class="fa-solid fa-wifi text-[10px]"></i>
+                <i class="fa-solid fa-battery-full text-xs text-emerald-400"></i>
+            </div>
+        </div>
+
+        <!-- DILA BRAND HEADER -->
+        <header class="bg-dila-dark text-white px-4 py-3 relative z-30 shadow-md">
+            <div class="flex items-center justify-between">
+                <!-- Location Selector -->
+                <div class="flex items-center gap-1.5 text-xs text-blue-100 bg-white/10 px-2.5 py-1 rounded-full backdrop-blur-sm">
+                    <i class="fa-solid fa-location-dot text-dila-cyan text-xs"></i>
+                    <span class="font-medium">Київ</span>
+                    <i class="fa-solid fa-chevron-down text-[9px] text-slate-300"></i>
+                </div>
+
+                <!-- Brand Logo (Dila Style) -->
+                <div class="flex items-center gap-1 font-black text-2xl tracking-tight">
+                    <span class="text-white">D</span>
+                    <span class="text-dila-yellow">i</span>
+                    <span class="text-white">лa</span>
+                    <span class="w-2 h-2 rounded-full bg-dila-cyan inline-block ml-0.5 animate-pulse"></span>
+                </div>
+
+                <!-- Rewards Coin / User Profile -->
+                <div class="flex items-center gap-2">
+                    <button onclick="switchTab('wallet')" class="flex items-center gap-1 bg-gradient-to-r from-amber-500/20 to-amber-400/30 border border-amber-400/40 text-amber-300 px-2.5 py-1 rounded-full text-xs font-bold hover:bg-amber-400/30 transition">
+                        <i class="fa-solid fa-coins text-dila-yellow"></i>
+                        <span id="coinsCount">150</span>
+                    </button>
+                    <div class="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center text-xs text-white border border-white/20">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN SCROLLABLE CONTENT AREA -->
+        <main class="flex-1 overflow-y-auto no-scrollbar relative z-10 pb-20">
+
+            <!-- HERO SECTION WITH SNOW ANIMATION & FESTIVE BRANDING -->
+            <section class="relative bg-gradient-to-b from-dila-dark via-dila-blue to-blue-700 text-white p-5 pt-4 overflow-hidden rounded-b-[2rem] shadow-lg">
+                <!-- Canvas falling snow overlay -->
+                <canvas id="snowCanvas" class="absolute inset-0 pointer-events-none z-10 opacity-70"></canvas>
+
+                <!-- Floating Dila 3D Spheres Background Art -->
+                <div class="absolute -top-6 -right-6 w-24 h-24 rounded-full dila-sphere-cyan opacity-80 animate-float pointer-events-none"></div>
+                <div class="absolute top-20 -left-8 w-20 h-20 rounded-full dila-sphere-yellow opacity-70 animate-float pointer-events-none" style="animation-delay: 1.5s;"></div>
+                <div class="absolute bottom-2 right-4 w-12 h-12 rounded-full dila-sphere-blue opacity-90 border border-white/30 pointer-events-none"></div>
+
+                <div class="relative z-20">
+                    <!-- Campaign Badge -->
+                    <div class="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-semibold text-blue-100 border border-white/20 mb-2">
+                        <i class="fa-solid fa-snowflake text-dila-cyan animate-spin" style="animation-duration: 8s;"></i>
+                        <span>Свято Здоров'я 2025–2026</span>
+                    </div>
+
+                    <h1 class="text-2xl font-extrabold leading-tight tracking-tight text-white mb-1">
+                        Новорічний <br><span class="text-dila-yellow drop-shadow-sm">Адвент Здоров'я</span>
+                    </h1>
+                    <p class="text-xs text-blue-100 font-light mb-4 max-w-[85%] leading-relaxed">
+                        Відкривайте нове віконце щодня у грудні! Отримуйте корисні поради лікаря та персональні знижки від ДІЛА.
+                    </p>
+
+                    <!-- PROGRESS BAR & MILESTONES -->
+                    <div class="bg-black/20 backdrop-blur-md p-3 rounded-2xl border border-white/15">
+                        <div class="flex justify-between items-center text-xs mb-1.5">
+                            <span class="text-slate-200 font-medium">Ваш прогрес:</span>
+                            <span class="text-dila-yellow font-bold" id="progressText">0 з 31 днів</span>
+                        </div>
+                        <div class="w-full bg-white/20 h-2.5 rounded-full overflow-hidden p-0.5">
+                            <div id="progressBar" class="bg-gradient-to-r from-dila-cyan via-amber-300 to-dila-yellow h-full rounded-full transition-all duration-500 w-0"></div>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] text-blue-200 mt-2 px-1 font-medium">
+                            <span>🎁 День 7: -20%</span>
+                            <span>🌟 День 15: Подарунок</span>
+                            <span>👑 День 31: Суперприз</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB CONTAINER (Calendar / Wallet / Rules) -->
+            <div id="tabContent">
+                <!-- TAB 1: CALENDAR GRID VIEW -->
+                <div id="viewCalendar" class="p-4 space-y-4">
+
+                    <!-- Filter / Quick Status bar -->
+                    <div class="flex items-center justify-between text-xs text-slate-600 px-1">
+                        <span class="font-bold text-dila-navy flex items-center gap-1.5">
+                            <i class="fa-regular fa-calendar-days text-dila-blue"></i>
+                            Календар Грудня
+                        </span>
+                        <div class="flex items-center gap-3 text-[11px]">
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Відкрито</span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-dila-yellow"></span> Сьогодні</span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-300"></span> Заперто</span>
+                        </div>
+                    </div>
+
+                    <!-- 31 DAYS ADVENT GRID -->
+                    <div id="adventGrid" class="grid grid-cols-4 gap-2.5">
+                        <!-- Dynamic Grid Cells Injected via JS -->
+                    </div>
+
+                    <!-- BANNER: FAMILY PROFILE (Reference to Dila screenshot) -->
+                    <div class="bg-gradient-to-r from-dila-blue to-dila-dark text-white p-4 rounded-3xl relative overflow-hidden shadow-md mt-6">
+                        <div class="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-dila-cyan/20 blur-xl"></div>
+                        <div class="relative z-10 flex items-center justify-between">
+                            <div class="max-w-[70%]">
+                                <span class="bg-dila-yellow text-dila-navy text-[10px] font-black uppercase px-2 py-0.5 rounded-full">
+                                    Сімейний профіль
+                                </span>
+                                <h3 class="font-bold text-sm mt-1 mb-0.5">Піклуйтесь про близьких</h3>
+                                <p class="text-[11px] text-blue-100">Додайте рідних у кабінет та отримуйте +15% кешбеку на аналізи.</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl dila-sphere-yellow flex items-center justify-center text-dila-navy text-xl shadow-lg">
+                                <i class="fa-solid fa-people-roof"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- TAB 2: MY WALLET / SAVED REWARDS -->
+                <div id="viewWallet" class="p-4 space-y-4 hidden">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-base font-bold text-dila-navy flex items-center gap-2">
+                            <i class="fa-solid fa-gift text-dila-blue"></i>
+                            Мої Збережені Бонуси
+                        </h2>
+                        <span id="savedCountBadge" class="bg-dila-blue text-white text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                    </div>
+
+                    <div id="walletList" class="space-y-3">
+                        <!-- Wallet items dynamically injected -->
+                    </div>
+                </div>
+
+                <!-- TAB 3: RULES & INFORMATION -->
+                <div id="viewRules" class="p-4 space-y-4 hidden">
+                    <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 space-y-3 text-xs text-slate-700 leading-relaxed">
+                        <h3 class="font-bold text-sm text-dila-navy flex items-center gap-2">
+                            <i class="fa-solid fa-circle-info text-dila-cyan"></i>
+                            Правила Акції «Адвент Здоров'я»
+                        </h3>
+                        <p>1. Щодня з 1 по 31 грудня у застосунку відкривається 1 нове віконце з персональною пропозицією.</p>
+                        <p>2. Усі акційні промокоди зберігаються у вашому розділі «Мої Бонуси» та дійсні для використання в мережі лабораторій ДІЛА до 31 січня 2026 року.</p>
+                        <p>3. Для активації знижки пред'явіть промокод медсестрі в маніпуляційному кабінеті або введіть його під час онлайн-оплати на сайті dila.ua.</p>
+                        <div class="p-3 bg-blue-50 rounded-2xl border border-blue-100 text-dila-blue font-medium">
+                            <i class="fa-solid fa-headset mr-1"></i> Гаряча лінія підтримки ДІЛА: <strong>0 800 217 887</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- BOTTOM NAVIGATION BAR (Dila Style) -->
+        <nav class="absolute bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2 flex justify-around items-center z-40">
+            <button onclick="switchTab('calendar')" id="navCalendar" class="flex flex-col items-center gap-1 text-dila-blue font-bold text-[10px]">
+                <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-base">
+                    <i class="fa-solid fa-calendar-star"></i>
+                </div>
+                <span>Адвент</span>
+            </button>
+
+            <button onclick="switchTab('wallet')" id="navWallet" class="flex flex-col items-center gap-1 text-slate-400 font-medium text-[10px] relative">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-base">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+                <span>Мої Бонуси</span>
+                <span id="navWalletDot" class="hidden absolute top-0 right-3 w-2 h-2 rounded-full bg-dila-yellow"></span>
+            </button>
+
+            <button onclick="switchTab('rules')" id="navRules" class="flex flex-col items-center gap-1 text-slate-400 font-medium text-[10px]">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-base">
+                    <i class="fa-solid fa-shield-heart"></i>
+                </div>
+                <span>Правила</span>
+            </button>
+        </nav>
+
+        <!-- DAY REWARD MODAL POPUP -->
+        <div id="rewardModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden transition-opacity duration-300 opacity-0">
+            <div class="bg-white w-full max-w-xs rounded-3xl overflow-hidden shadow-2xl border border-white/50 relative transform transition-all duration-300 scale-90" id="modalCard">
+
+                <!-- Modal Header Decoration -->
+                <div class="bg-gradient-to-br from-dila-dark via-dila-blue to-dila-cyan text-white p-5 pt-6 text-center relative overflow-hidden">
+                    <button onclick="closeModal()" class="absolute top-3 right-3 w-7 h-7 rounded-full bg-black/20 text-white flex items-center justify-center text-xs hover:bg-black/40 transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+
+                    <!-- Festive Bauble Graphic -->
+                    <div id="modalSphere" class="w-16 h-16 mx-auto rounded-full dila-sphere-yellow flex items-center justify-center text-dila-navy text-2xl shadow-xl mb-2 animate-bounce">
+                        <i id="modalIcon" class="fa-solid fa-gift"></i>
+                    </div>
+
+                    <span id="modalDayTag" class="inline-block bg-white/20 text-blue-100 text-[10px] font-bold px-2.5 py-0.5 rounded-full mb-1">
+                        ДЕНЬ 15
+                    </span>
+                    <h2 id="modalTitle" class="text-lg font-black text-white leading-tight">
+                        Назва Подарунка
+                    </h2>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="p-5 space-y-4">
+
+                    <!-- Health Tip Section -->
+                    <div class="bg-blue-50/80 p-3.5 rounded-2xl border border-blue-100 flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-dila-blue text-white flex-shrink-0 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-user-doctor"></i>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold text-dila-blue uppercase tracking-wider">Порада Лікаря ДІЛА</div>
+                            <p id="modalTip" class="text-xs text-slate-700 mt-0.5 leading-snug font-light">
+                                Інформація про здоров'я...
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Discount / Reward Card -->
+                    <div class="bg-slate-50 p-3.5 rounded-2xl border border-dashed border-dila-blue/40 text-center relative">
+                        <div class="text-[11px] font-medium text-slate-500">Ваша персональна вигода:</div>
+                        <div id="modalRewardText" class="text-base font-extrabold text-dila-navy my-1">
+                            -20% на Зимовий Комплекс
+                        </div>
+
+                        <!-- Promo Code display -->
+                        <div class="mt-2 flex items-center justify-center gap-2">
+                            <code id="modalCode" class="bg-dila-blue/10 text-dila-blue font-mono font-bold px-3 py-1 rounded-lg text-sm tracking-wider">
+                                DILA-WINTER20
+                            </code>
+                        </div>
+                    </div>
+
+                    <!-- LEAD CAPTURE / CLAIM FORM -->
+                    <div id="claimForm" class="space-y-2">
+                        <label class="block text-[11px] font-medium text-slate-600">Отримайте промокод на Email / Viber:</label>
+                        <input type="text" id="userInput" placeholder="Email або номер телефону" class="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-dila-blue text-slate-800">
+                        <button onclick="claimReward()" class="w-full bg-dila-yellow hover:bg-dila-yellowHover text-dila-navy font-black text-xs py-3 rounded-xl shadow-md transition transform active:scale-95 flex items-center justify-center gap-2">
+                            <span>ЗАБРАТИ ПОДАРУНОК</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                    <!-- Already Claimed View -->
+                    <div id="alreadyClaimed" class="hidden text-center space-y-2">
+                        <div class="text-emerald-600 font-bold text-xs flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-circle-check"></i>
+                            Бонус активовано та збережено!
+                        </div>
+                        <button onclick="copyPromoCode()" class="w-full bg-dila-blue hover:bg-dila-dark text-white font-bold text-xs py-2.5 rounded-xl transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-copy"></i>
+                            Скопіювати промокод
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- TOAST NOTIFICATION -->
+        <div id="toast" class="absolute top-14 inset-x-4 bg-slate-900/90 text-white text-xs px-4 py-2.5 rounded-2xl shadow-xl z-50 flex items-center justify-between border border-slate-700 transform -translate-y-20 transition-transform duration-300 pointer-events-none">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-emerald-400" id="toastIcon"></i>
+                <span id="toastMsg">Повідомлення</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // ==========================================
+        // 31 DAYS DATABASE OF HEALTH ADVENT CONTENT
+        // ==========================================
+        const adventDaysData = [
+            { day: 1, title: "Зимовий Імунітет", tip: "Взимку рівень сонячного ультрафіолету падає. Перевірте базовий імунний статус перед морозами.", reward: "-20% на Комплекс 'Імунітет'", code: "IMMUNO-20", icon: "fa-shield-virus", category: "immunity" },
+            { day: 2, title: "Сонячний Вітамін D3", tip: "Понад 80% українців взимку мають дефіцит Вітаміну D. Це впливає на настрій та енергію.", reward: "Безкоштовний аналіз D3 при чек-апі", code: "SUNNY-D3", icon: "fa-sun", category: "vitamins" },
+            { day: 3, title: "Залізна Енергія", tip: "Хронічна втома та мерзлякуватість часто є ознаками прихованого дефіциту феритину.", reward: "-15% на перевірку Феритину та Заліза", code: "FERRUM-15", icon: "fa-bolt", category: "checkup" },
+            { day: 4, title: "Щитоподібна Залоза", tip: "Щитоподібна залоза регулює ваш метаболізм і теплообмін у холодну пору року.", reward: "-20% на Комплекс ТТГ + T4 вільний", code: "THYROID-20", icon: "fa-dna", category: "checkup" },
+            { day: 5, title: "Здорове Серце", tip: "Перепади температур створюють додаткове навантаження на серцево-судинну систему.", reward: "Безкоштовна ліпідна панель", code: "HEART-FREE", icon: "fa-heart-pulse", category: "heart" },
+            { day: 6, title: "Свято Миколая", tip: "Найкращий подарунок малюкам — турбота про їхній міцний імунітет та безтурботне дитинство.", reward: "Знижка -30% на всі Дитячі Пакети", code: "ST-NICHOLAS", icon: "fa-wand-magic-sparkles", category: "family" },
+            { day: 7, title: "Баланс Цукру", tip: "Контроль рівня глюкози допомагає уникнути зимових стрибків апетиту та втоми.", reward: "-15% на Глікований Гемоглобін HbA1c", code: "GLUCOSE-15", icon: "fa-cubes-stacked", category: "checkup" },
+            { day: 8, title: "Здорова Печінка", tip: "Підготуйте травну систему до святкового періоду заздалегідь.", reward: "-20% на Печінкові проби (АлАТ, АсАТ)", code: "LIVER-CARE", icon: "fa-apple-whole", category: "checkup" },
+            { day: 9, title: "Сяюча Шкіра", tip: "Мороз і сухе повітря від опалення виснажують шкіру. Перевірте мікроелементи сяйва.", reward: "-25% на Б'юті-комплекс шкіра та волосся", code: "BEAUTY-GLOW", icon: "fa-gem", category: "vitamins" },
+            { day: 10, title: "Здоровий Сон", tip: "Мелатонін і кортизол відповідають за відновлення під час сну. Уникайте гаджетів перед сном.", reward: "-15% на аналіз Кортизолу у слині", code: "CALM-SLEEP", icon: "fa-moon", category: "wellness" },
+            { day: 11, title: "Спортивна Форма", tip: "Підтримуйте фізичну активність узимку для кращої циркуляції лімфи.", reward: "-20% на Чек-ап для спортсменів", code: "FIT-CHECK", icon: "fa-person-running", category: "checkup" },
+            { day: 12, title: "Міцні Кістки", tip: "Кальцій та фосфор засвоюються краще при нормальному рівні магнію.", reward: "-15% на Кальцій іонний та Магній", code: "BONE-STRONG", icon: "fa-bone", category: "vitamins" },
+            { day: 13, title: "Сімейна Турбота", tip: "Об'єднуйте профілі всієї родини в застосунку ДІЛА для спільної турботи.", reward: "-20% на Розширений Сімейний Чек-ап", code: "FAMILY-CARE", icon: "fa-people-roof", category: "family" },
+            { day: 14, title: "Чоловіче Здоров'я", tip: "Регулярна профілактика після 30 років — запорука високого рівня тестостерону та наснаги.", reward: "-20% на Чоловічу Профілактичну Панель", code: "MEN-HEALTH", icon: "fa-mars", category: "checkup" },
+            { day: 15, title: "Жіночий Баланс", tip: "Гормональний баланс визначає настрій, рівень енергії та красу кожної жінки.", reward: "-25% на Гормональний комплекс жінки", code: "WOMEN-BAL", icon: "fa-venus", category: "checkup" },
+            { day: 16, title: "Здоровий ШКТ", tip: "Мікробіота кишківника формує до 70% клітин нашого імунітету.", reward: "-15% на Гастро-панель та мікробіоту", code: "GASTRO-15", icon: "fa-stomach", category: "checkup" },
+            { day: 17, title: "Без Алергій", tip: "Зимова алергія на пилових кліщів часто маскується під затяжну застуду.", reward: "-20% на Молекулярну Алергодіагностику", code: "NO-ALLERGY", icon: "fa-snowflake", category: "checkup" },
+            { day: 18, title: "Антиоксиданти", tip: "Цинк і Селен — головні мінерали-антиоксиданти для боротьби з вірусами.", reward: "-15% на перевірку Цинку та Селену", code: "ANTIOX-18", icon: "fa-atom", category: "vitamins" },
+            { day: 19, title: "Легкість і Тонус", tip: "Пийте достатньо теплої води взимку — це прискорює виведення токсинів.", reward: "-20% на комплекс 'Хронічна Втома'", code: "NO-FATIGUE", icon: "fa-glass-water", category: "wellness" },
+            { day: 20, title: "Здорові Нирки", tip: "Контроль ниркових проб важливий при вживанні зігріваючих напоїв та ліків.", reward: "-15% на Ныркові проби та Креатинін", code: "KIDNEY-15", icon: "fa-notes-medical", category: "checkup" },
+            { day: 21, title: "Безкоштовний Забір", tip: "Зручність перш за все! Забір крові одноразовими системами безпечний та безболісний.", reward: "Сертифікат на Безкоштовний забір крові", code: "FREE-BLOOD", icon: "fa-syringe", category: "bonus" },
+            { day: 22, title: "Нейро-Баланс", tip: "Вітаміни групи B підтримують нервову систему в період річних дедлайнів.", reward: "-20% на Комплекс Вітамінів B (B12, B6)", code: "VIT-B-COMPLEX", icon: "fa-brain", category: "vitamins" },
+            { day: 23, title: "Метаболізм", tip: "Оцінка метаболічного синдрому допомагає зберегти ідеальну вагу у свята.", reward: "-15% на Електроліти та Метаболізм", code: "METABOLISM", icon: "fa-scale-balanced", category: "checkup" },
+            { day: 24, title: "Святковий Настрій", tip: "Напередодні Різдва даруйте собі та близьким спокій за своє здоров'я.", reward: "Гайд 'Здорові Свята' + Знижка -20%", code: "HOLIDAY-PREP", icon: "fa-holly-berry", category: "bonus" },
+            { day: 25, title: "Різдвяне Диво", tip: "З Різдвом Христовим! Нехай у ваших домівках панує затишок, а в тілі — міцне здоров'я.", reward: "СУПЕР-ПОДАРУНОК: -35% на Річний Чек-ап", code: "XMAS-MAGIC", icon: "fa-star", category: "super" },
+            { day: 26, title: "Детокс & Легкість", tip: "Після святкових застіль допоможіть печінці та жовчному міхуру відновитися.", reward: "-20% на експрес-комплекс 'Детокс'", code: "POST-DETOX", icon: "fa-leaf", category: "wellness" },
+            { day: 27, title: "Суглоби та Рух", tip: "Активні зимові розваги потребують міцного зв'язкового апарату.", reward: "-15% на Ревматологічний комплекс", code: "JOINTS-15", icon: "fa-child-reaching", category: "checkup" },
+            { day: 28, title: "Здоров'я Судин", tip: "Перевірка гомоцистеїну показує реальний стан ваших судин.", reward: "-20% на Коагулограму та Гомоцистеїн", code: "VASCULAR-20", icon: "fa-heart-circle-check", category: "heart" },
+            { day: 29, title: "Виклик Медсестри", tip: "Здавайте аналізи, не залишаючи теплого ліжка — медсестра приїде додому.", reward: "-20% на послугу Виклику медсестри додому", code: "HOME-CALL", icon: "fa-house-medical", category: "bonus" },
+            { day: 30, title: "Новорічна Підготовка", tip: "Залишився 1 день до Нового Року. Час загадувати найміцніші бажання!", reward: "Сертифікат 200 грн на будь-які аналізи", code: "GIFT-200UAH", icon: "fa-gifts", category: "bonus" },
+            { day: 31, title: "З Новим 2026 Роком!", tip: "ДІЛА вітає вас з Новим Роком! Бажаємо міцного здоров'я, миру та краси!", reward: "Участь у розіграші 10 Річних Абонементів!", code: "HAPPY-2026", icon: "fa-crown", category: "super" }
+        ];
+
+        // ==========================================
+        // APP STATE
+        // ==========================================
+        let simulatedToday = 15; // Default simulated today is Dec 15th
+        let unlockedDays = JSON.parse(localStorage.getItem('dila_unlocked_days') || '[1,2,3,4,5,6,7,8,9,10,11,12,13,14]');
+        let savedRewards = JSON.parse(localStorage.getItem('dila_saved_rewards') || '[]');
+        let currentModalDay = null;
+
+        // Initialize App on DOM Ready
+        document.addEventListener('DOMContentLoaded', () => {
+            initDaySelector();
+            renderCalendarGrid();
+            updateProgress();
+            renderWallet();
+            initSnowEffect();
+        });
+
+        // Initialize Day Dropdown Selector
+        function initDaySelector() {
+            const select = document.getElementById('daySelect');
+            select.innerHTML = '';
+            for (let i = 1; i <= 31; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `${i} грудня`;
+                if (i === simulatedToday) opt.selected = true;
+                select.appendChild(opt);
+            }
+        }
+
+        // Set Simulated Day from Top Control Bar
+        function setSimulatedDay(day) {
+            simulatedToday = parseInt(day);
+            renderCalendarGrid();
+            updateProgress();
+            showToast(`Поточну дату змінено на ${simulatedToday} грудня`, 'fa-sliders');
+        }
+
+        // Reset All Calendar Progress
+        function resetCalendarProgress() {
+            if (confirm('Скинути збережений прогрес та відкриті дверцята?')) {
+                unlockedDays = [];
+                savedRewards = [];
+                localStorage.removeItem('dila_unlocked_days');
+                localStorage.removeItem('dila_saved_rewards');
+                renderCalendarGrid();
+                updateProgress();
+                renderWallet();
+                showToast('Прогрес скинуто!', 'fa-rotate-right');
+            }
+        }
+
+        // ==========================================
+        // RENDER ADVENT CALENDAR GRID
+        // ==========================================
+        function renderCalendarGrid() {
+            const grid = document.getElementById('adventGrid');
+            grid.innerHTML = '';
+
+            adventDaysData.forEach(item => {
+                const dayNum = item.day;
+                const isOpened = unlockedDays.includes(dayNum);
+                const isToday = (dayNum === simulatedToday);
+                const isLocked = (dayNum > simulatedToday && !isOpened);
+
+                const card = document.createElement('div');
+                card.className = `relative rounded-2xl p-2.5 flex flex-col items-center justify-between cursor-pointer transition-all duration-300 min-h-[92px] select-none ${
+                    isOpened 
+                        ? 'bg-emerald-500/10 border border-emerald-400/40 text-emerald-900 shadow-sm hover:scale-[1.02]' 
+                        : isToday 
+                            ? 'bg-gradient-to-b from-dila-blue to-dila-dark text-white active-day-pulse border-2 border-dila-yellow scale-[1.04] z-20' 
+                            : 'bg-white/80 backdrop-blur-sm border border-slate-200/80 text-slate-400 hover:bg-white hover:text-slate-600 shadow-sm'
+                }`;
+
+                card.onclick = () => handleDayClick(dayNum);
+
+                // Card Content HTML
+                let badgeHTML = '';
+                let iconHTML = '';
+
+                if (isOpened) {
+                    badgeHTML = `<span class="text-[9px] font-extrabold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5"><i class="fa-solid fa-check"></i></span>`;
+                    iconHTML = `<div class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs shadow-sm"><i class="fa-solid ${item.icon}"></i></div>`;
+                } else if (isToday) {
+                    badgeHTML = `<span class="text-[9px] font-black text-dila-navy bg-dila-yellow px-1.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse">ВІДКРИТИ</span>`;
+                    iconHTML = `<div class="w-9 h-9 rounded-full dila-sphere-yellow flex items-center justify-center text-dila-navy text-sm shadow-lg"><i class="fa-solid ${item.icon}"></i></div>`;
+                } else {
+                    badgeHTML = `<span class="text-[10px] text-slate-400 font-medium"><i class="fa-solid fa-lock text-[9px] mr-0.5"></i> ${dayNum}</span>`;
+                    iconHTML = `<div class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-xs"><i class="fa-solid ${item.icon}"></i></div>`;
+                }
+
+                card.innerHTML = `
+                    <div class="w-full flex justify-between items-center text-xs">
+                        <span class="font-black text-xs ${isToday ? 'text-dila-yellow' : isOpened ? 'text-emerald-700' : 'text-slate-500'}">${dayNum}</span>
+                        ${badgeHTML}
+                    </div>
+                    <div class="my-1">${iconHTML}</div>
+                    <div class="text-[10px] font-bold text-center truncate w-full ${isToday ? 'text-white' : isOpened ? 'text-emerald-900' : 'text-slate-600'}">
+                        ${item.title}
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        // ==========================================
+        // HANDLE DAY CLICK & MODAL INTERACTION
+        // ==========================================
+        function handleDayClick(dayNum) {
+            const item = adventDaysData.find(d => d.day === dayNum);
+            if (!item) return;
+
+            if (dayNum > simulatedToday && !unlockedDays.includes(dayNum)) {
+                // Future locked day
+                showToast(`День ${dayNum} заперто! Поверніться ${dayNum} грудня.`, 'fa-lock');
+                return;
+            }
+
+            currentModalDay = item;
+
+            // Populate Modal Data
+            document.getElementById('modalDayTag').textContent = `ДЕНЬ ${item.day} • ${item.category.toUpperCase()}`;
+            document.getElementById('modalTitle').textContent = item.title;
+            document.getElementById('modalTip').textContent = item.tip;
+            document.getElementById('modalRewardText').textContent = item.reward;
+            document.getElementById('modalCode').textContent = item.code;
+            
+            const modalIcon = document.getElementById('modalIcon');
+            modalIcon.className = `fa-solid ${item.icon}`;
+
+            const isAlreadyOpened = unlockedDays.includes(dayNum);
+            const claimForm = document.getElementById('claimForm');
+            const alreadyClaimed = document.getElementById('alreadyClaimed');
+
+            if (isAlreadyOpened) {
+                claimForm.classList.add('hidden');
+                alreadyClaimed.classList.remove('hidden');
+            } else {
+                claimForm.classList.remove('hidden');
+                alreadyClaimed.classList.add('hidden');
+            }
+
+            // Trigger Confetti Blast if opening today or new day
+            if (!isAlreadyOpened && dayNum <= simulatedToday) {
+                triggerConfetti();
+            }
+
+            openModal();
+        }
+
+        function openModal() {
+            const modal = document.getElementById('rewardModal');
+            const card = document.getElementById('modalCard');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                card.classList.remove('scale-90');
+                card.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('rewardModal');
+            const card = document.getElementById('modalCard');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-90');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // Claim Reward Lead Capture Action
+        function claimReward() {
+            if (!currentModalDay) return;
+
+            const userInput = document.getElementById('userInput').value.trim();
+            if (!userInput) {
+                alert('Будь ласка, введіть ваш Email або номер телефону');
+                return;
+            }
+
+            // Save to unlocked days
+            if (!unlockedDays.includes(currentModalDay.day)) {
+                unlockedDays.push(currentModalDay.day);
+                localStorage.setItem('dila_unlocked_days', JSON.stringify(unlockedDays));
+            }
+
+            // Save to saved rewards wallet
+            const rewardEntry = {
+                day: currentModalDay.day,
+                title: currentModalDay.title,
+                reward: currentModalDay.reward,
+                code: currentModalDay.code,
+                dateClaimed: new Date().toLocaleDateString('uk-UA')
+            };
+
+            if (!savedRewards.some(r => r.day === currentModalDay.day)) {
+                savedRewards.push(rewardEntry);
+                localStorage.setItem('dila_saved_rewards', JSON.stringify(savedRewards));
+            }
+
+            // Add Coins Reward
+            const currentCoins = parseInt(document.getElementById('coinsCount').textContent) || 0;
+            document.getElementById('coinsCount').textContent = currentCoins + 50;
+
+            // UI Feedback
+            renderCalendarGrid();
+            updateProgress();
+            renderWallet();
+
+            triggerConfetti();
+            showToast('Вітаємо! Подарунок збережено у бонуси! (+50 🪙)', 'fa-gift');
+
+            document.getElementById('claimForm').classList.add('hidden');
+            document.getElementById('alreadyClaimed').classList.remove('hidden');
+        }
+
+        function copyPromoCode() {
+            if (!currentModalDay) return;
+            navigator.clipboard.writeText(currentModalDay.code);
+            showToast(`Промокод ${currentModalDay.code} скопійовано!`, 'fa-copy');
+        }
+
+        // ==========================================
+        // PROGRESS BAR & WALLET RENDERERS
+        // ==========================================
+        function updateProgress() {
+            const count = unlockedDays.length;
+            const percentage = Math.round((count / 31) * 100);
+            document.getElementById('progressText').textContent = `${count} з 31 днів`;
+            document.getElementById('progressBar').style.width = `${percentage}%`;
+            document.getElementById('savedCountBadge').textContent = savedRewards.length;
+
+            const dot = document.getElementById('navWalletDot');
+            if (savedRewards.length > 0) dot.classList.remove('hidden');
+            else dot.classList.add('hidden');
+        }
+
+        function renderWallet() {
+            const walletList = document.getElementById('walletList');
+            if (savedRewards.length === 0) {
+                walletList.innerHTML = `
+                    <div class="text-center py-10 bg-white rounded-3xl p-6 border border-slate-200">
+                        <div class="w-12 h-12 rounded-full bg-blue-50 text-dila-blue flex items-center justify-center text-xl mx-auto mb-2">
+                            <i class="fa-solid fa-gift"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-700 text-sm">Ваш гаманець порожній</h4>
+                        <p class="text-xs text-slate-400 mt-1">Відкривайте щоденні віконця в адвент-календарі, щоб накопичувати бонуси!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            walletList.innerHTML = '';
+            savedRewards.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-3';
+                el.innerHTML = `
+                    <div>
+                        <span class="text-[10px] font-bold text-dila-blue bg-blue-50 px-2 py-0.5 rounded-full">ДЕНЬ ${item.day}</span>
+                        <h4 class="font-bold text-xs text-dila-navy mt-1">${item.title}</h4>
+                        <p class="text-[11px] text-emerald-600 font-semibold mt-0.5">${item.reward}</p>
+                    </div>
+                    <button onclick="copyCodeDirect('${item.code}')" class="bg-dila-blue/10 hover:bg-dila-blue hover:text-white text-dila-blue px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition flex flex-col items-center">
+                        <span>${item.code}</span>
+                        <span class="text-[9px] font-sans font-normal opacity-75">копіювати</span>
+                    </button>
+                `;
+                walletList.appendChild(el);
+            });
+        }
+
+        function copyCodeDirect(code) {
+            navigator.clipboard.writeText(code);
+            showToast(`Промокод ${code} скопійовано!`, 'fa-copy');
+        }
+
+        // ==========================================
+        // TABS NAVIGATION & TOAST UTILS
+        // ==========================================
+        function switchTab(tabName) {
+            const cal = document.getElementById('viewCalendar');
+            const wal = document.getElementById('viewWallet');
+            const rul = document.getElementById('viewRules');
+
+            const navCal = document.getElementById('navCalendar');
+            const navWal = document.getElementById('navWallet');
+            const navRul = document.getElementById('navRules');
+
+            [cal, wal, rul].forEach(el => el.classList.add('hidden'));
+            [navCal, navWal, navRul].forEach(el => {
+                el.className = "flex flex-col items-center gap-1 text-slate-400 font-medium text-[10px]";
+            });
+
+            if (tabName === 'calendar') {
+                cal.classList.remove('hidden');
+                navCal.className = "flex flex-col items-center gap-1 text-dila-blue font-bold text-[10px]";
+            } else if (tabName === 'wallet') {
+                wal.classList.remove('hidden');
+                navWal.className = "flex flex-col items-center gap-1 text-dila-blue font-bold text-[10px]";
+            } else if (tabName === 'rules') {
+                rul.classList.remove('hidden');
+                navRul.className = "flex flex-col items-center gap-1 text-dila-blue font-bold text-[10px]";
+            }
+        }
+
+        function showToast(message, iconClass = 'fa-circle-check') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = message;
+            document.getElementById('toastIcon').className = `fa-solid ${iconClass} text-emerald-400`;
+
+            toast.classList.remove('-translate-y-20');
+            toast.classList.add('translate-y-0');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0');
+                toast.classList.add('-translate-y-20');
+            }, 2800);
+        }
+
+        // Confetti Burst FX
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 60,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#004FB6', '#00A3FF', '#FFC700', '#FFFFFF']
+                });
+            }
+        }
+
+        // ==========================================
+        // CANVAS FALLING SNOW EFFECT
+        // ==========================================
+        function initSnowEffect() {
+            const canvas = document.getElementById('snowCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            function resizeCanvas() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            const flakes = Array.from({ length: 30 }, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 2 + 1,
+                speed: Math.random() * 0.8 + 0.3,
+                wind: Math.random() * 0.4 - 0.2
+            }));
+
+            function animateSnow() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+
+                flakes.forEach(f => {
+                    ctx.beginPath();
+                    ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    f.y += f.speed;
+                    f.x += f.wind;
+
+                    if (f.y > canvas.height) {
+                        f.y = -5;
+                        f.x = Math.random() * canvas.width;
+                    }
+                });
+
+                requestAnimationFrame(animateSnow);
+            }
+            animateSnow();
+        }
+    </script>
+</body>
+</html>
